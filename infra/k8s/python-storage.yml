@@ -1,0 +1,39 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: python-pv
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  claimRef:
+     namespace: airflow
+     name: python-pvc
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /opt/airflow/python_code
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - airflow-cluster-control-plane
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: python-pvc
+spec:
+  storageClassName: local-storage
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 3Gi
