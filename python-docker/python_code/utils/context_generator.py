@@ -61,7 +61,7 @@ def gen_context_file():
         's3',
         region_name='us-east-1'
     )
-    s3.Object('dcs-staging-mwaa-dags', 'config').put(Body=config_text)
+    s3.Object('jj-dcs-staging-mwaa-dags', 'config').put(Body=config_text)
 
 if __name__=="__main__":
     gen_context_file()

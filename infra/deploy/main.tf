@@ -1,6 +1,6 @@
 terraform {
     backend "s3" {
-        bucket = "dcs-mwaa-devops-tfstate"
+        bucket = "jj-dcs-mwaa-devops-tfstate"
         key = "mwaa.tfstate"
         region = "us-east-1"
         encrypt = true

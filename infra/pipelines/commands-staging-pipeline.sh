@@ -2,18 +2,18 @@
 
 # Parameters
 AWS_PROFILE=$2
-GIT_USERNAME=la-haus
-GIT_REPO=dcs-mwaa
+GIT_USERNAME=JJBon
+GIT_REPO=mwaa_sandbox
 GIT_BRANCH=staging
 S3_BUCKET_NAME=jj-dcs-mwaa-staging-pipe
 EKSCluster=lh-shared-services
 MwaaName=dcs-staging-mwaa
 DagsBucketName=jj-dcs-staging-mwaa-dags
 EKSNamespace=dcs-staging-mwaa
-MWAAVpc=vpc-0e6eb452255a05512
-PrivateSub1=subnet-01eda08c882f8f84f
+MWAAVpc=vpc-303f244b
+PrivateSub1=subnet-6075ed6f
 PrivateSub2=""
-PrivateSub3=subnet-0b5b637bb2fd70cb7
+PrivateSub3=subnet-81d608af
 
 
 
