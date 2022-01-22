@@ -1,0 +1,23 @@
+version: '3.7'
+
+services:
+  terraform:
+    #image: public.ecr.aws/hashicorp/terraform:0.14.9
+    image: public.ecr.aws/hashicorp/terraform:0.13.7
+    volumes:
+      - .:/infra
+      - ../../airflow-docker:/airflow-docker
+      - ../environments:/environments
+    working_dir: /infra
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - TF_VAR_prefix=${TF_VAR_prefix}
+      - TF_VAR_cluster_id=${TF_VAR_cluster_id}
+      - TF_VAR_airflow_dags_bucket=${TF_VAR_airflow_dags_bucket}
+      - TF_VAR_namespace_name=${TF_VAR_namespace_name}
+      - TF_VAR_vpc_id=${TF_VAR_vpc_id}
+      - TF_VAR_vpc_pv_sub_1=${TF_VAR_vpc_pv_sub_1}
+      - TF_VAR_vpc_pv_sub_2=${TF_VAR_vpc_pv_sub_2}
+      - TF_VAR_vpc_pv_sub_3=${TF_VAR_vpc_pv_sub_3}

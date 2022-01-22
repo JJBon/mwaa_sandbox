@@ -1,0 +1,37 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${reg_port}"]
+    endpoint = ["http://${reg_name}:${reg_port}"]
+nodes:
+- role: control-plane
+  image: public.ecr.aws/e2e1t5k9/kind-docker
+  extraMounts:
+    - hostPath: ../../airflow-docker/dags
+      containerPath: /opt/airflow/dags
+    - hostPath: ../../python-docker/python_code
+      containerPath: /opt/airflow/python_code
+    - hostPath: ../../airflow-docker/unittests
+      containerPath: /opt/airflow/unittests
+# - role: worker
+#   kubeadmConfigPatches:
+#   - |
+#     kind: JoinConfiguration
+#     nodeRegistration:
+#       kubeletExtraArgs:
+#         node-labels: "node=worker_1"
+# - role: worker
+#   kubeadmConfigPatches:
+#   - |
+#     kind: JoinConfiguration
+#     nodeRegistration:
+#       kubeletExtraArgs:
+#         node-labels: "node=worker_2"
+# - role: worker
+#   kubeadmConfigPatches:
+#   - |
+#     kind: JoinConfiguration
+#     nodeRegistration:
+#       kubeletExtraArgs:
+#         node-labels: "node=worker_3"
