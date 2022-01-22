@@ -542,7 +542,6 @@ Resources:
                 - docker push "${REPOSITORY_URI}:latest"
                 - docker push "${REPOSITORY_URI}:${TAG}"
                 - printf '{"Tag":"%s","RepositoryUri":"%s"}' $TAG $REPOSITORY_URI $PROJECT_NAME $ARTIFACT_BUCKET > build.json
-                - docker run --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY "${REPOSITORY_URI}:latest" python /python_code/utils/context_generator.py
       Environment:
         ComputeType: BUILD_GENERAL1_MEDIUM
         Type: LINUX_CONTAINER
@@ -610,10 +609,10 @@ Resources:
                 - cd ../deploy
                 - docker-compose run --rm terraform init
                 - docker-compose run --rm terraform apply -auto-approve
-                - docker run --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY "${REPOSITORY_URI}:latest" python /python_code/utils/context_generator.py
+                - docker run --env AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" --env AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" "${REPOSITORY_URI}:latest" python /python_code/utils/context_generator.py
                
       Environment:
-        ComputeType: BUILD_GENERAL1_MEDIUM
+        ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
         Image: "aws/codebuild/standard:2.0"
         PrivilegedMode: True
@@ -683,7 +682,7 @@ Resources:
                 - docker-compose run --rm terraform init
                 - docker-compose run --rm terraform apply -destroy -auto-approve
       Environment:
-        ComputeType: BUILD_GENERAL1_MEDIUM
+        ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
         Image: "aws/codebuild/standard:2.0"
         PrivilegedMode: True
