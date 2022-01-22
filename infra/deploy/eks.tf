@@ -29,7 +29,7 @@ resource "aws_eks_cluster" "cluster" {
   version  = "1.18"
 
   vpc_config {
-    subnet_ids = [aws_subnet.private_subnets[0].id,aws_subnet.private_subnets[1].id]
+    subnet_ids = [var.vpc_pv_sub_1,var.vpc_pv_sub_3]
   }
 
   # Ensure that IAM Role permissions are created before and deleted after EKS Cluster handling.
@@ -77,8 +77,7 @@ resource "aws_eks_node_group" "nodes" {
   cluster_name    = aws_eks_cluster.cluster.name
   node_group_name = "default"
   node_role_arn   = aws_iam_role.nodes.arn
-  subnet_ids      = [aws_subnet.private_subnets[0].id,aws_subnet.private_subnets[1].id]
-
+  subnet_ids      = [var.vpc_pv_sub_1,var.vpc_pv_sub_3]
   # We start with a minimal setup
   scaling_config {
     desired_size = 1
@@ -87,7 +86,7 @@ resource "aws_eks_node_group" "nodes" {
   }
 
   # I'd recommend t3.large or t3.xlarge for most production workloads
-  instance_types = ["t3.medium"]
+  instance_types = ["t2.medium"]
 
   # Ensure that IAM Role permissions are created before and deleted after EKS Node Group handling.
   # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.

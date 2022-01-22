@@ -62,7 +62,7 @@ Parameters:
     MinLength: 10
     MaxLength: 100
     ConstraintDescription: Must specify Terraform bucket name
-    Default: dcs-mwaa-devops-tfstate
+    Default: jj-dcs-mwaa-devops-tfstate
 
   TerraformTableName:
       Type: String
@@ -641,9 +641,18 @@ Resources:
             Value: !Ref PrivateSub2
           - Name: TF_VAR_vpc_pv_sub_3
             Value: !Ref PrivateSub3
-      Name: !Ref AWS::StackName
+      Name: !Sub ${AWS::StackName}-destroy
       ServiceRole: !Ref CodebuildRole
     DependsOn: [CodebuildRole,TerraformBucket,TerraformDynamoTable]
+
+  DestroyAlert:
+    Type: AWS::SNS::Topic
+    Properties: 
+      DisplayName: !Sub ${AWS::StackName}-destroy-alert
+      Subscription: 
+        - Protocol: Email 
+          Endpoint: jjbonillatroncoso@gmail.com
+      TopicName: !Sub ${AWS::StackName}-destroy-alert
 
   CodePipelineGitHub:
     Type: AWS::CodePipeline::Pipeline
@@ -685,4 +694,34 @@ Resources:
               OutputArtifacts:
                 - Name: BuildOutput
               RunOrder: 1
+        - Name: DestroyConfirm
+          Actions:
+            - Name: DestroyConfirm
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Version: 1
+                Provider: Manual
+              Configuration: 
+                NotificationArn: !Ref DestroyAlert
+                CustomData: "Confirm destruction of staging resources"
+              InputArtifacts: []
+              OutputArtifacts: []
+              
+        - Name: Destroy
+          Actions:
+            - Name: Destroy 
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildDestroy
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts:
+                - Name: BuildOutputDestroy
+              RunOrder: 1
+
     DependsOn: [CodeBuildProject,CodePipelineRole]
