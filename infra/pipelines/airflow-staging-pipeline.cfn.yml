@@ -542,8 +542,6 @@ Resources:
                 - docker push "${REPOSITORY_URI}:latest"
                 - docker push "${REPOSITORY_URI}:${TAG}"
                 - printf '{"Tag":"%s","RepositoryUri":"%s"}' $TAG $REPOSITORY_URI $PROJECT_NAME $ARTIFACT_BUCKET > build.json
-                - docker-compose run --rm terraform init
-                - docker-compose run --rm terraform apply -auto-approve
                 - docker run --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY "${REPOSITORY_URI}:latest" python /python_code/utils/context_generator.py
       Environment:
         ComputeType: BUILD_GENERAL1_MEDIUM
@@ -574,6 +572,76 @@ Resources:
       Name: !Ref AWS::StackName
       ServiceRole: !Ref CodebuildRole
     DependsOn: [CodebuildRole,TerraformBucket,TerraformDynamoTable]
+
+  CodeBuildApply:
+    Type: AWS::CodeBuild::Project
+      Properties:
+        Artifacts:
+          Type: CODEPIPELINE
+        Source:
+          Type: CODEPIPELINE
+          BuildSpec: |
+            version: 0.2
+            phases:
+              install:
+                runtime-versions:
+                  docker: 18
+                commands:
+                  - rm -f /etc/apt/sources.list.d/sbt.list
+                  - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg > pubkey.gpg
+                  - apt-key add pubkey.gpg
+                  - rm -rf pubkey.gpg
+                  - apt-get -y update
+                  - apt-get -y install jq
+                  - export AWS_ACCESS_KEY_ID=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.AccessKeyId'`
+                  - export AWS_SECRET_ACCESS_KEY=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.SecretAccessKey'`
+                  - export AWS_SESSION_TOKEN=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.Token'`
+                  - apt-get install -y apt-transport-https ca-certificates curl
+                  - curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+                  - echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+                  - apt-get update
+              pre_build:
+                commands:
+                  - echo "Starting docker daemon..."
+                  - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+                  - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+                  - echo "Logging into Amazon ECR..."
+                  - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION})
+                  - cd ../deploy
+                  - docker-compose run --rm terraform init
+                  - docker-compose run --rm terraform apply -auto-approve
+                  - docker run --env AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY "${REPOSITORY_URI}:latest" python /python_code/utils/context_generator.py
+
+                 
+        Environment:
+          ComputeType: BUILD_GENERAL1_MEDIUM
+          Type: LINUX_CONTAINER
+          Image: "aws/codebuild/standard:2.0"
+          PrivilegedMode: True
+          EnvironmentVariables:
+            - Name: AWS_DEFAULT_REGION
+              Value: !Ref AWS::Region
+            - Name: REPOSITORY_URI
+              Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerRepository}
+            - Name: TF_VAR_prefix
+              Value: !Ref MwaaName
+            - Name: TF_VAR_cluster_id
+              Value: !Ref EKSCluster
+            - Name: TF_VAR_airflow_dags_bucket
+              Value: !Ref DagsBucketName
+            - Name: TF_VAR_namespace_name
+              Value: !Ref EKSNamespace
+            - Name: TF_VAR_vpc_id
+              Value: !Ref MWAAVpc
+            - Name: TF_VAR_vpc_pv_sub_1
+              Value: !Ref PrivateSub1
+            - Name: TF_VAR_vpc_pv_sub_2
+              Value: !Ref PrivateSub2
+            - Name: TF_VAR_vpc_pv_sub_3
+              Value: !Ref PrivateSub3
+        Name: !Sub ${AWS::StackName}-apply
+        ServiceRole: !Ref CodebuildRole
+      DependsOn: [CodebuildRole,TerraformBucket,TerraformDynamoTable]
 
   CodeBuildDestroy:
     Type: AWS::CodeBuild::Project
@@ -693,6 +761,21 @@ Resources:
                 - Name: App
               OutputArtifacts:
                 - Name: BuildOutput
+              RunOrder: 1
+        - Name: Apply
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildApply
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts:
+                - Name: BuildOutputApply
               RunOrder: 1
         - Name: DestroyConfirm
           Actions:
