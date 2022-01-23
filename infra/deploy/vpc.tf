@@ -8,4 +8,8 @@ data "aws_vpc" "default" {
 data "aws_subnet_ids" "default" {
    # By referencing the block above we can determine the ID of the default VPCs
    vpc_id = data.aws_vpc.default.id
+   filter {
+       name = "availability-zone"
+       values = ["us-east-1a","us-east-1b","us-east-1c"]
+   }
 }
