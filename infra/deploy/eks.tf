@@ -78,7 +78,6 @@ resource "aws_eks_node_group" "nodes" {
   node_group_name = "default"
   node_role_arn   = aws_iam_role.nodes.arn
   subnet_ids      = [aws_subnet.private_subnets[0].id, aws_subnet.private_subnets[1].id]
-
   # We start with a minimal setup
   scaling_config {
     desired_size = 1
