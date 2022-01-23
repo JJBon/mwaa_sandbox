@@ -31,7 +31,7 @@ resource "kubernetes_namespace" "staging_ns" {
 resource "kubernetes_secret" "dcs-secrets" {
   metadata {
     name = "dcs-secrets"
-    namespace = kubernetes_namespace.staging_ns.uid
+    namespace = kubernetes_namespace.staging_ns.metadata.0.name
   }
 
   type = "generic"
@@ -40,15 +40,13 @@ resource "kubernetes_secret" "dcs-secrets" {
     for line in compact(split("\n", file("${path.module}/../environments/.env_prod"))):
       split("=",line)[0] => split("=",line)[1]  
   }
-
-  depends_on=[kubernetes_namespace.staging_ns]
   
 }
 
 resource "kubernetes_role" "main_role" {
   metadata {
     name = "main-role"
-    namespace = var.namespace_name
+    namespace = kubernetes_namespace.staging_ns.metadata.0.name
     labels = {
       test = "MyRole"
     }
@@ -75,29 +73,23 @@ resource "kubernetes_role" "main_role" {
       ,"update"
         ]
   }
-
-  depends_on=[kubernetes_namespace.staging_ns]
-
 }
 
 resource "kubernetes_role_binding" "example" {
   metadata {
     name      = "main-role-binding"
-    namespace = var.namespace_name
+    namespace = kubernetes_namespace.staging_ns.metadata.0.name
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "Role"
-    name      = kubernetes_role.main_role.uid
+    name      = kubernetes_role.main_role.metadata.0.name
   }
   subject {
     kind      = "User"
     name      = "main-service"
     api_group = "rbac.authorization.k8s.io"
   }
-
-  depends_on=[kubernetes_namespace.staging_ns]
-
  
 }
 
