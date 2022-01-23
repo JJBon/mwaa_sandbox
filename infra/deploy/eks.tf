@@ -29,7 +29,7 @@ resource "aws_eks_cluster" "cluster" {
   version  = "1.18"
 
   vpc_config {
-    subnet_ids = data.aws_subnet_ids.default.ids
+    subnet_ids = module.vpc.private_subnets
   }
 
   # Ensure that IAM Role permissions are created before and deleted after EKS Cluster handling.
@@ -77,7 +77,7 @@ resource "aws_eks_node_group" "nodes" {
   cluster_name    = aws_eks_cluster.cluster.name
   node_group_name = "default"
   node_role_arn   = aws_iam_role.nodes.arn
-  subnet_ids      = data.aws_subnet_ids.default.ids
+  subnet_ids      = module.vpc.private_subnets
   # We start with a minimal setup
   scaling_config {
     desired_size = 1
