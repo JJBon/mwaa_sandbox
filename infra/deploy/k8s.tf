@@ -40,13 +40,15 @@ resource "kubernetes_secret" "dcs-secrets" {
     for line in compact(split("\n", file("${path.module}/../environments/.env_prod"))):
       split("=",line)[0] => split("=",line)[1]  
   }
+
+  depends_on=[kubernetes_namespace.staging_ns]
   
 }
 
 resource "kubernetes_role" "main_role" {
   metadata {
     name = "main-role"
-    namespace = kubernetes_namespace.staging_ns.uid
+    namespace = var.namespace_name
     labels = {
       test = "MyRole"
     }
@@ -73,12 +75,15 @@ resource "kubernetes_role" "main_role" {
       ,"update"
         ]
   }
+
+  depends_on=[kubernetes_namespace.staging_ns]
+
 }
 
 resource "kubernetes_role_binding" "example" {
   metadata {
     name      = "main-role-binding"
-    namespace = kubernetes_namespace.staging_ns.uid
+    namespace = var.namespace_name
   }
   role_ref {
     api_group = "rbac.authorization.k8s.io"
@@ -90,6 +95,9 @@ resource "kubernetes_role_binding" "example" {
     name      = "main-service"
     api_group = "rbac.authorization.k8s.io"
   }
+
+  depends_on=[kubernetes_namespace.staging_ns]
+
  
 }
 
