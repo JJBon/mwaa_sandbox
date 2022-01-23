@@ -87,7 +87,7 @@ resource "kubernetes_role_binding" "example" {
   }
   subject {
     kind      = "User"
-    name      = "main-service"
+    name      = "mwaa-service"
     api_group = "rbac.authorization.k8s.io"
   }
  
