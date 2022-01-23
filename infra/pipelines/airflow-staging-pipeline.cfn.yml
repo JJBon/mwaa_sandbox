@@ -465,6 +465,14 @@ Resources:
                       "codestar-connections:UntagResource"
                   ],
                   "Resource": "*"
+                },
+                {
+                  "Sid": "SNSPermissions",
+                  "Effect": "Allow",
+                  "Action": [
+                      "sns:Publish"
+                  ],
+                  "Resource": "*"
                 }
               ]
             }
@@ -526,10 +534,14 @@ Resources:
                 - echo "Logging into Amazon ECR..."
                 - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION})
                 - TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
+                - cd infra/deploy
+                - docker-compose run --rm terraform init
+                - docker-compose run --rm terraform validate
+
             build:
               commands:
+                - cd ../scripts
                 - echo Build started on `date`
-                - cd infra/scripts
                 - bash start_cluster.sh
                 - bash run_tests.sh
                 - docker image tag python-image:1.0.1 "${REPOSITORY_URI}:latest" 
@@ -606,11 +618,10 @@ Resources:
                 - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
                 - echo "Logging into Amazon ECR..."
                 - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION})
-                - cd ../deploy
+                - cd infra/deploy
                 - docker-compose run --rm terraform init
-                - docker-compose run --rm terraform apply -auto-approve
-                - docker run --env AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}" --env AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}" "${REPOSITORY_URI}:latest" python /python_code/utils/context_generator.py
-               
+                - docker-compose run --rm terraform import module.k8s.kubernetes_config_map.aws_auth[0] kube-system/aws-auth
+                - docker-compose run --rm terraform apply -auto-approve               
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
@@ -678,9 +689,9 @@ Resources:
                 - TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
             build:
               commands:
-                - cd ../deploy
+                - cd infra/deploy
                 - docker-compose run --rm terraform init
-                - docker-compose run --rm terraform apply -destroy -auto-approve
+                - docker-compose run --rm terraform destroy -force
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
