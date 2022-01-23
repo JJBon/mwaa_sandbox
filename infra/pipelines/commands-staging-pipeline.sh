@@ -14,6 +14,7 @@ MWAAVpc=vpc-303f244b
 PrivateSub1=subnet-6075ed6f
 PrivateSub2=""
 PrivateSub3=subnet-81d608af
+MWAARole=dcs-mwaa-staging-role
 
 
 
@@ -23,4 +24,5 @@ aws cloudformation $1 --stack-name=dcs-mwaa-staging-pipeline --template-body=fil
 ParameterKey=GitBranch,ParameterValue=${GIT_BRANCH} ParameterKey=S3Folder,ParameterValue=${S3_BUCKET_NAME} \
 ParameterKey=EKSCluster,ParameterValue=${EKSCluster} ParameterKey=MwaaName,ParameterValue=${MwaaName} \
 ParameterKey=DagsBucketName,ParameterValue=${DagsBucketName} ParameterKey=EKSNamespace,ParameterValue=${EKSNamespace} \
-ParameterKey=MWAAVpc,ParameterValue=${MWAAVpc} ParameterKey=PrivateSub1,ParameterValue=${PrivateSub1} ParameterKey=PrivateSub2,ParameterValue=${PrivateSub2} ParameterKey=PrivateSub3,ParameterValue=${PrivateSub3} --capabilities CAPABILITY_NAMED_IAM 
+ParameterKey=MWAAVpc,ParameterValue=${MWAAVpc} ParameterKey=PrivateSub1,ParameterValue=${PrivateSub1} ParameterKey=PrivateSub2,ParameterValue=${PrivateSub2} ParameterKey=PrivateSub3,ParameterValue=${PrivateSub3} \
+ParameterKey=MWAARole,ParameterValue=${MWAARole} --capabilities CAPABILITY_NAMED_IAM 
