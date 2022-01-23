@@ -620,7 +620,6 @@ Resources:
                 - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION})
                 - cd infra/deploy
                 - docker-compose run --rm terraform init
-                - docker-compose run --rm terraform import module.k8s.kubernetes_config_map.aws_auth[0] kube-system/aws-auth
                 - docker-compose run --rm terraform apply -auto-approve               
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
