@@ -73,3 +73,8 @@ variable "vpc_pv_sub_3" {
   type = "string"
   description = "vpc third private subnet for mwaa"
 }
+
+variable "mwaa_role" {
+  type = "string"
+  description = "role name for mwaa"
+}
