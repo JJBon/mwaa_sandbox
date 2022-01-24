@@ -1,9 +1,9 @@
-awscli==1.22.39
-kubernetes==21.7.0
-cryptography==36.0.1
+awscli
+kubernetes
+cryptography
 watchtower==1.0.6
 apache-airflow[cncf.kubernetes]==2.0.2
 apache-airflow-providers-http==1.1.1
 apache-airflow-providers-ssh==1.3.0
 apache-airflow-providers-postgres==1.0.1
-pytest==6.2.5
+pytest

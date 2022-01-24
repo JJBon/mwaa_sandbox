@@ -37,7 +37,7 @@ aws_args = {
     "cluster_context":"aws",
     "image_pull_policy":"Always",
     "secrets":[secret_env],
-    #"config_file":f"{airflow_home}/dags/kube_config.yaml",
+    "config_file":f"{airflow_home}/dags/config",
     "namespace":"lh-shared-services",
     "is_delete_operator_pod": True
 }
