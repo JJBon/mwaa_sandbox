@@ -32,7 +32,7 @@ local_args = {
 }
 
 aws_args = {
-    "image":"521664337176.dkr.ecr.us-east-1.amazonaws.com/data-mwaa-staging",
+    "image":"668102661106.dkr.ecr.us-east-1.amazonaws.com/mwaa_sandbox-staging",
     "in_cluster": False,
     "cluster_context":"aws",
     "image_pull_policy":"Always",
