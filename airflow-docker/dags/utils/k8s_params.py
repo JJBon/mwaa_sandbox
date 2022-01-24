@@ -38,6 +38,6 @@ aws_args = {
     "image_pull_policy":"Always",
     "secrets":[secret_env],
     "config_file":f"{airflow_home}/dags/kube_config.yaml",
-    "namespace":"lh-shared-services",
+    "namespace":"dcs-staging-mwaa",
     "is_delete_operator_pod": True
 }

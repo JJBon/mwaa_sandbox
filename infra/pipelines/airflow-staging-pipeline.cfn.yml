@@ -630,8 +630,7 @@ Resources:
                 - docker-compose run --rm terraform apply -auto-approve 
                 - echo "${AWS_ACCESS_KEY_ID}"
                 - echo "${AWS_SECRET_ACCESS_KEY}"
-                - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --arn "${mwaa_role_arn}" --username mwaa-service
-                - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --arn arn:aws:iam::668102661106:user/haus_user --username haus-user    
+                - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --arn "${mwaa_role_arn}" --username mwaa-service   
                 - aws eks update-kubeconfig --region us-east-1 --kubeconfig ./kube_config.yaml --name "${TF_VAR_cluster_id}" --alias aws
                 - aws s3 cp ./kube_config.yaml "s3://${TF_VAR_airflow_dags_bucket}/dags/kube_config.yaml"   
       Environment:
