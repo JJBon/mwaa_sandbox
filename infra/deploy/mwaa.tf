@@ -151,6 +151,7 @@ resource "aws_mwaa_environment" "mwaa_environment" {
   max_workers           = var.mwaa_max_workers
   name                  = var.prefix
   webserver_access_mode = "PUBLIC_ONLY"
+  airflow_version = "2.0.2"
 
   network_configuration {
     security_group_ids = [aws_security_group.mwaa.id]

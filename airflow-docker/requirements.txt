@@ -1,6 +1,6 @@
 awscli
 kubernetes
-cryptography
+cryptography==3.4.7
 watchtower==1.0.6
 apache-airflow[cncf.kubernetes]==2.0.2
 apache-airflow-providers-http==1.1.1
