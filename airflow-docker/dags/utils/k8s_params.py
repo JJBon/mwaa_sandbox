@@ -10,7 +10,7 @@ import os
 
 airflow_home = os.environ.get("AIRFLOW_HOME")
 
-secret_env = Secret('env', None, 'dcs-secrets')
+secret_env = Secret('env', None, 'coredata-secrets')
 
 volume_mount = k8s.V1VolumeMount(
     name='python-pv', mount_path='/python_code', sub_path=None, read_only=True
@@ -28,7 +28,8 @@ local_args = {
     "volume_mounts": [volume_mount],
     "in_cluster": True,
     "namespace": "airflow",
-    "is_delete_operator_pod":False
+    "is_delete_operator_pod":False,
+    "configmaps":["airflow-vars"]
 }
 
 aws_args = {
