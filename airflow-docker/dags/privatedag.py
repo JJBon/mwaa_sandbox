@@ -63,7 +63,7 @@ with DAG(
     podRun = KubernetesPodOperator(
                         cmds=["bash"],
                         #arguments=["-c", "python -m /opt/airflow/python_code/test_code.py"],
-                        arguments=["-c", "python /python_code/test_code.py"],
+                        arguments=["-c", "python /python_code/python_services/test_code2.py"],
                         labels={"task": "pod_run","pod_name":"podRun2"},
                         name="mwaa-tests",
                         task_id="podRun",

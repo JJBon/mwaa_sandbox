@@ -99,24 +99,12 @@ resource "kubernetes_role_binding" "example" {
 
 }
 
-
-
-
-
-# resource "kubernetes_config_map" "aws_auth" {
-#     metadata {
-#         name = "aws_auth"
-#         namespace = "kube-system"
-#     }
-
-#     data = {
-#         mapRoles = [yamlencode(local.test)]
-#     }
-# }
-
-# locals {
-#     test = {
-#         rolearn = "arn:aws:iam::668102661106:role/dcs-mwaa-staging-pipeline-CodebuildRole"
-        
-#     }
-# }
+resource "kubernetes_config_map" "airflow-vars" {
+  metadata {
+    name = "airflow-vars"
+    namespace = var.namespace_name
+  }
+  data = {
+    "airflow_vars.json"   = "${file("${path.module}/../environments/airflow_vars.json")}"
+  }
+}
