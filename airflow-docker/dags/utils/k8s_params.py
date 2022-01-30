@@ -40,5 +40,6 @@ aws_args = {
     "secrets":[secret_env],
     "config_file":f"{airflow_home}/dags/kube_config.yaml",
     "namespace":"dcs-staging-mwaa",
-    "is_delete_operator_pod": True
+    "is_delete_operator_pod": True,
+    "configmaps":["airflow-vars"]
 }
