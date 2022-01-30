@@ -10,7 +10,7 @@ import os
 
 airflow_home = os.environ.get("AIRFLOW_HOME")
 
-secret_env = Secret('env', None, 'coredata-secrets')
+secret_env = Secret('env', None, 'dcs-secrets')
 
 volume_mount = k8s.V1VolumeMount(
     name='python-pv', mount_path='/python_code', sub_path=None, read_only=True

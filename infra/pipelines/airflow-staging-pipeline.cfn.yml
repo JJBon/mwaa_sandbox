@@ -501,12 +501,18 @@ Resources:
         Type: CODEPIPELINE
         BuildSpec: |
           version: 0.2
+          env:
+            git-credential-helper: yes
           phases:
             install:
               runtime-versions:
                 docker: 18
               commands:
-                - git submodule update --remote
+                - mkdir -p ~/.ssh
+                - echo ${GIT_KEY} | base64 --decode > ~/.ssh/id_rsa
+                - chmod 600 ~/.ssh/id_rsa
+                - eval "$(ssh-agent -s)"
+                - git submodule update --init --recursive
                 - rm -f /etc/apt/sources.list.d/sbt.list
                 - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg > pubkey.gpg
                 - apt-key add pubkey.gpg
@@ -586,6 +592,10 @@ Resources:
             Value: !Ref PrivateSub3
           - Name: TF_VAR_mwaa_role
             Value: !Ref MWAARole
+          - Name: GIT_KEY
+            Type: SECRETS_MANAGER
+            Value: GitHubKeys:gitkey
+
       Name: !Ref AWS::StackName
       ServiceRole: !Ref CodebuildRole
     DependsOn: [CodebuildRole,TerraformBucket,TerraformDynamoTable]
@@ -628,7 +638,7 @@ Resources:
                 - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION})
                 - cd infra/deploy
                 - docker-compose run --rm terraform init
-                - docker-compose run --rm terraform apply -auto-approve 
+                - docker-compose run --rm terraform apply -auto-approve -lock=false
                 - echo "${AWS_ACCESS_KEY_ID}"
                 - echo "${AWS_SECRET_ACCESS_KEY}"
                 - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --arn "${mwaa_role_arn}" --username mwaa-service   
@@ -774,21 +784,21 @@ Resources:
               OutputArtifacts:
                 - Name: App
               RunOrder: 1
-        # - Name: Build
-        #   Actions:
-        #     - Name: Build
-        #       ActionTypeId:
-        #         Category: Build
-        #         Owner: AWS
-        #         Version: 1
-        #         Provider: CodeBuild
-        #       Configuration:
-        #         ProjectName: !Ref CodeBuildProject
-        #       InputArtifacts:
-        #         - Name: App
-        #       OutputArtifacts:
-        #         - Name: BuildOutput
-        #       RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts:
+                - Name: BuildOutput
+              RunOrder: 1
         - Name: Apply
           Actions:
             - Name: Build
