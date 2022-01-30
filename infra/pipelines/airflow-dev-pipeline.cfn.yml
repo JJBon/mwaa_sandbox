@@ -40,7 +40,8 @@ Parameters:
     MinLength: 10
     MaxLength: 200
     ConstraintDescription: You must enter a git-crypt-key
- 
+    
+     
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:

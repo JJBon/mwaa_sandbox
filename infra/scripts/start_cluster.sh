@@ -7,7 +7,7 @@ cd ..
 kubectl create namespace airflow 
 kubectl apply -f ./k8s/airflow-storage-v1.yml -n airflow
 kubectl apply -f ./k8s/python-storage.yml -n airflow
-kubectl create secret generic coredata-secrets --from-env-file=./environments/.env_dev -n airflow
+kubectl create secret generic dcs-secrets --from-env-file=./environments/.env_dev -n airflow
 kubectl create configmap airflow-vars --from-file=./environments/airflow_vars.json -n airflow
 docker build -t airflow-image:2.0.2 ../airflow-docker 
 kind load docker-image airflow-image:2.0.2 --name airflow-cluster
