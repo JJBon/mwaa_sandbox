@@ -553,7 +553,6 @@ Resources:
                 - cd ../scripts
                 - echo Build started on `date`
                 - bash start_cluster.sh
-                - bash run_tests.sh
                 - docker image tag python-image:1.0.1 "${REPOSITORY_URI}:latest" 
                 - docker tag "${REPOSITORY_URI}:latest" "${REPOSITORY_URI}:${TAG}"
             post_build:
@@ -639,8 +638,6 @@ Resources:
                 - cd infra/deploy
                 - docker-compose run --rm terraform init
                 - docker-compose run --rm terraform apply -auto-approve -lock=false
-                - echo "${AWS_ACCESS_KEY_ID}"
-                - echo "${AWS_SECRET_ACCESS_KEY}"
                 - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --arn "${mwaa_role_arn}" --username mwaa-service   
                 - aws eks update-kubeconfig --region us-east-1 --kubeconfig ./kube_config.yaml --name "${TF_VAR_cluster_id}" --alias aws
                 - aws s3 cp ./kube_config.yaml "s3://${TF_VAR_airflow_dags_bucket}/dags/kube_config.yaml"   
