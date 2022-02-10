@@ -7,4 +7,5 @@ RUN apt update && apt install build-essential -y && apt-get install manpages-dev
 RUN pip install --upgrade pip
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
+RUN pip3 install pytest
 COPY python_code /python_code
