@@ -97,6 +97,12 @@ resource "kubernetes_role_binding" "example" {
     api_group = "rbac.authorization.k8s.io"
   }
 
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.mwaa_service_account.metadata.0.name
+    api_group = "rbac.authorization.k8s.io"
+  }
+
 }
 
 resource "kubernetes_config_map" "airflow-vars" {
@@ -106,5 +112,15 @@ resource "kubernetes_config_map" "airflow-vars" {
   }
   data = {
     "airflow_vars.json"   = "${file("${path.module}/../environments/airflow_vars.json")}"
+  }
+}
+
+resource "kubernetes_service_account" "mwaa_service_account" {
+  metadata {
+    name = var.service_account_name
+    namespace = var.namespace_name
+    annotations = {
+      "eks.amazonaws.com/role-arn": aws_iam_role.service_account_role.arn
+    }
   }
 }

@@ -105,3 +105,16 @@ resource "aws_iam_openid_connect_provider" "cluster" {
   url             = aws_eks_cluster.cluster.identity.0.oidc.0.issuer
 }
 
+resource "aws_iam_role" "service_account_role" {
+  name = "service_account_role"
+
+  # Terraform's "jsonencode" function converts a
+  # Terraform expression result to valid JSON syntax.
+  assume_role_policy =  templatefile("templates/oidc_assume_role_policy.json", { OIDC_ARN = aws_iam_openid_connect_provider.cluster.arn, OIDC_URL = replace(aws_iam_openid_connect_provider.cluster.url, "https://", ""), NAMESPACE = var.namespace_name, SA_NAME = var.service_account_name })
+
+  tags = {
+    tag-key = "tag-value"
+  }
+}
+
+

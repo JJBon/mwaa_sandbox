@@ -78,3 +78,8 @@ variable "mwaa_role" {
   type = "string"
   description = "role name for mwaa"
 }
+
+variable "service_account_name" {
+  type = "string"
+  description = "role name for mwaa"
+}
