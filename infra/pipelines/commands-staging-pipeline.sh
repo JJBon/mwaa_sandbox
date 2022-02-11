@@ -15,6 +15,7 @@ PrivateSub1=subnet-6075ed6f
 PrivateSub2=""
 PrivateSub3=subnet-81d608af
 MWAARole=dcs-mwaa-staging-role
+ServiceAccountName=mwaa-service-account
 
 
 
@@ -25,4 +26,4 @@ ParameterKey=GitBranch,ParameterValue=${GIT_BRANCH} ParameterKey=S3Folder,Parame
 ParameterKey=EKSCluster,ParameterValue=${EKSCluster} ParameterKey=MwaaName,ParameterValue=${MwaaName} \
 ParameterKey=DagsBucketName,ParameterValue=${DagsBucketName} ParameterKey=EKSNamespace,ParameterValue=${EKSNamespace} \
 ParameterKey=MWAAVpc,ParameterValue=${MWAAVpc} ParameterKey=PrivateSub1,ParameterValue=${PrivateSub1} ParameterKey=PrivateSub2,ParameterValue=${PrivateSub2} ParameterKey=PrivateSub3,ParameterValue=${PrivateSub3} \
-ParameterKey=MWAARole,ParameterValue=${MWAARole} --capabilities CAPABILITY_NAMED_IAM 
+ParameterKey=MWAARole,ParameterValue=${MWAARole} ParameterKey=ServiceAccountName,ParameterValue=${ServiceAccountName} --capabilities CAPABILITY_NAMED_IAM 
