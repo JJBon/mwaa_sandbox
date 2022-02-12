@@ -100,7 +100,7 @@ resource "kubernetes_role_binding" "example" {
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account.mwaa_service_account.metadata.0.name
-    api_group = "rbac.authorization.k8s.io"
+    #api_group = "rbac.authorization.k8s.io"
   }
 
 }
