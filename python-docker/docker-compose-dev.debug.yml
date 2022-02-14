@@ -6,16 +6,17 @@ services:
     tty: true 
     volumes:
         - ./python_code:/python_code
-    environment:
+    env_file:
+    - ../infra/environments/.env_dev
+    image: python-image:1.0.1
+    build:
+      context: .
+      args:
       - AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
       - AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN
       - AWS_SECURITY_TOKEN=$AWS_SECURITY_TOKEN
-    env_file:
-    - ../infra/environments/.env_dev
-    build:
-      context: .
-      dockerfile: ./Dockerfile
+      - pc_environ=local
     entrypoint: /bin/sh
     ports:
       - 8000:8000

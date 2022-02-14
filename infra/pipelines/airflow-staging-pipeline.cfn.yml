@@ -720,7 +720,7 @@ Resources:
               commands:
                 - cd infra/deploy
                 - docker-compose run --rm terraform init
-                - docker-compose run --rm terraform destroy -force
+                - docker-compose run --rm terraform destroy -force 
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
@@ -789,21 +789,21 @@ Resources:
               OutputArtifacts:
                 - Name: App
               RunOrder: 1
-        # - Name: Build
-        #   Actions:
-        #     - Name: Build
-        #       ActionTypeId:
-        #         Category: Build
-        #         Owner: AWS
-        #         Version: 1
-        #         Provider: CodeBuild
-        #       Configuration:
-        #         ProjectName: !Ref CodeBuildProject
-        #       InputArtifacts:
-        #         - Name: App
-        #       OutputArtifacts:
-        #         - Name: BuildOutput
-        #       RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts:
+                - Name: BuildOutput
+              RunOrder: 1
         - Name: Apply
           Actions:
             - Name: Build

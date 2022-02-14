@@ -55,31 +55,31 @@ variable "namespace_name" {
 }
 
 variable "vpc_id" {
-  type = "string"
+  type = string
   description = "vpc id for mwaa"
 }
 
 variable "vpc_pv_sub_1" {
-  type = "string"
+  type = string
   description = "vpc first private subnet for mwaa"
 }
 
 variable "vpc_pv_sub_2" {
-  type = "string"
+  type = string
   description = "vpc second private subnet for mwaa"
 }
 
 variable "vpc_pv_sub_3" {
-  type = "string"
+  type = string
   description = "vpc third private subnet for mwaa"
 }
 
 variable "mwaa_role" {
-  type = "string"
+  type = string
   description = "role name for mwaa"
 }
 
 variable "service_account_name" {
-  type = "string"
+  type = string
   description = "role name for mwaa"
 }
