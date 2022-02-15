@@ -99,13 +99,14 @@ resource "aws_eks_node_group" "nodes" {
   tags = local.tags
 }
 
-data "external" "thumb" {
-  program = ["./oidc-thumbprint.sh", var.region]
-}
+# data "external" "thumb" {
+#   program = ["./oidc-thumbprint.sh", var.region]
+# }
 
 resource "aws_iam_openid_connect_provider" "cluster" {
   client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.external.thumb.result.thumbprint]
+  thumbprint_list = []
+  #thumbprint_list = [data.external.thumb.result.thumbprint]
   url             = aws_eks_cluster.cluster.identity.0.oidc.0.issuer
 }
 
