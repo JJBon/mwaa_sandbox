@@ -100,7 +100,7 @@ resource "aws_eks_node_group" "nodes" {
 }
 
 data "external" "thumb" {
-  program = ["scripts/oidc-thumbprint.sh", var.region]
+  program = ["./oidc-thumbprint.sh", var.region]
 }
 
 resource "aws_iam_openid_connect_provider" "cluster" {
