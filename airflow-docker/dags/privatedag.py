@@ -69,6 +69,7 @@ with DAG(
                         task_id="podRun",
                         get_logs=True,
                         dag=dag,
+                        service_account_name="mwaa-service-account",
                         **podArgs
                         )
 
