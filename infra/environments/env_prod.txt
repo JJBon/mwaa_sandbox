@@ -1,0 +1,2 @@
+ENV=prod
+COOKIE=cookie2?32
