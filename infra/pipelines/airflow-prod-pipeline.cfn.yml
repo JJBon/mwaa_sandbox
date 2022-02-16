@@ -1,0 +1,829 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: CFN Template to deploy CodePipeline to build Docker Image and push to ECR
+
+Parameters:
+
+  GitSourceRepo:
+    Type: String
+    Description: GitHub source repository - must contain a Dockerfile in the base
+    Default: eks-example
+    MinLength: 1
+    MaxLength: 100
+    ConstraintDescription: You must enter a GitHub repository name
+
+  GitBranch:
+    Type: String
+    Default: master
+    Description: GitHub git repository branch - change triggers a new build
+    MinLength: 1
+    MaxLength: 100
+    ConstraintDescription: You must enter a GitHub repository branch name
+
+  GitHubUser:
+    Type: String
+    Description: GitHub username or organization
+    MinLength: 3
+    MaxLength: 100
+    ConstraintDescription: You must enter a GitHub username or organization
+  
+  S3Folder:
+    Type: String
+    Description: s3 folder for code build artifacts
+    MinLength: 10
+    MaxLength: 100
+    ConstraintDescription: You must enter a S3 folder for code build
+
+  EKSCluster:
+    Type: String
+    Description: EKS cluster to be used by mwaa 
+    MinLength: 5
+    MaxLength: 100
+    ConstraintDescription: Must specify cluster Name
+
+
+  MwaaName:
+    Type: String
+    Description: Name of MWAA environment
+    MinLength: 10
+    MaxLength: 100
+    ConstraintDescription: Must specify MWAA Environment name
+
+  DagsBucketName:
+    Type: String
+    Description: Dag bucket name
+    MinLength: 10
+    MaxLength: 100
+    ConstraintDescription: Must specify Dag bucket name
+
+  TerraformBucketName:
+    Type: String
+    Description: Terraform bucket name
+    MinLength: 10
+    MaxLength: 100
+    ConstraintDescription: Must specify Terraform bucket name
+    Default: coredata-mwaa-devops-tfstate
+
+  TerraformTableName:
+      Type: String
+      Description: Terraform table name
+      MinLength: 10
+      MaxLength: 100
+      ConstraintDescription: Must specify Terraform table name
+      Default: coredata-mwaa-devops-tf-state-lock
+
+  EKSNamespace:
+    Type: String
+    Description: Namespace for mwaa resources
+    Default: coredata-mwaa
+
+  MWAAVpc:
+    Type: String
+    Description: Existing vpc 
+
+  PrivateSub1: 
+    Type: String
+    Description: Private subnet 1
+  
+  PrivateSub2: 
+    Type: String
+    Description: Private subnet 2
+
+  PrivateSub3: 
+    Type: String
+    Description: Private subnet 3
+
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: GitHub
+        Parameters:
+          - GitHubUser
+          - GitSourceRepo
+          - GitBranch
+    ParameterLabels:
+      GitHubUser:
+        default: Username
+      GitSourceRepo:
+        default: Repository
+      GitBranch:
+        default: Branch
+
+Resources:
+
+  PipelineBucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Ref S3Folder
+
+  TerraformBucket:
+    Type: 'AWS::S3::Bucket'
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Ref TerraformBucketName
+      VersioningConfiguration:
+        Status: Enabled
+
+  TerraformDynamoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      KeySchema: 
+          - 
+            AttributeName: "LockID"
+            KeyType: "HASH"
+      TableName: !Ref TerraformTableName
+      AttributeDefinitions: 
+        -
+          AttributeName: "LockID"
+          AttributeType: "S"
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+
+  CodebuildRole: 
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codebuild.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        }
+      Description: "code build role used for coredata prod deployment"
+      Policies: 
+        - PolicyName: "cbPolicy"
+          PolicyDocument: |
+              {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "CloudWatchLogsAccessPolicy",
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Sid": "CodeCommitPolicy",
+                  "Effect": "Allow",
+                  "Action": [
+                    "codecommit:GitPull"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Sid": "S3AccessPolicy",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:GetObjectVersion",
+                    "s3:GetBucketAcl",
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Sid": "ECRAccessPolicy",
+                  "Effect": "Allow",
+                  "Action": [
+                    "ecr:GetAuthorizationToken",
+                    "ecr:GetDownloadUrlForLayer",
+                    "ecr:BatchGetImage",
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:PutImage",
+                    "ecr:InitiateLayerUpload",
+                    "ecr:UploadLayerPart",
+                    "ecr:CompleteLayerUpload"
+                  ],
+                  "Resource": "*"
+                },
+                  {
+                  "Sid": "TerraformRequiredPermissions",
+                  "Effect": "Allow",
+                  "Action": [
+                      "ecr:GetAuthorizationToken",
+                      "ecr:GetDownloadUrlForLayer",
+                      "ecr:BatchGetImage",
+                      "ecr:BatchCheckLayerAvailability",
+                      "ecr:PutImage",
+                      "ecr:InitiateLayerUpload",
+                      "ecr:UploadLayerPart",
+                      "ecr:CompleteLayerUpload",
+                      "ec2:*",
+                      "airflow:*",
+                      "rds:DeleteDBSubnetGroup",
+                      "rds:CreateDBInstance",
+                      "rds:CreateDBSubnetGroup",
+                      "rds:DeleteDBInstance",
+                      "rds:DescribeDBSubnetGroups",
+                      "rds:DescribeDBInstances",
+                      "rds:ListTagsForResource",
+                      "rds:ModifyDBInstance",
+                      "rds:AddTagsToResource",
+                      "iam:CreateRole",
+                      "iam:GetInstanceProfile",
+                      "iam:DeletePolicy",
+                      "iam:DetachRolePolicy",
+                      "iam:GetRole",
+                      "iam:AddRoleToInstanceProfile",
+                      "iam:ListInstanceProfilesForRole",
+                      "iam:ListAttachedRolePolicies",
+                      "iam:ListRolePolicies",
+                      "iam:GetOpenIDConnectProvider",
+                      "iam:DeleteRole",
+                      "iam:TagRole",
+                      "iam:PassRole",
+                      "iam:GetPolicyVersion",
+                      "iam:GetPolicy",
+                      "iam:CreatePolicyVersion",
+                      "iam:DeletePolicyVersion",
+                      "iam:CreateInstanceProfile",
+                      "iam:DeleteInstanceProfile",
+                      "iam:ListPolicyVersions",
+                      "iam:AttachRolePolicy",
+                      "iam:CreatePolicy",
+                      "iam:CreateServiceLinkedRole",
+                      "iam:CreateOpenIDConnectProvider",
+                      "iam:RemoveRoleFromInstanceProfile",
+                      "iam:DeleteOpenIDConnectProvider",
+                      "logs:CreateLogGroup",
+                      "logs:DeleteLogGroup",
+                      "logs:DescribeLogGroups",
+                      "logs:ListTagsLogGroup",
+                      "logs:TagLogGroup",
+                      "ecs:DeleteCluster",
+                      "ecs:CreateService",
+                      "ecs:UpdateService",
+                      "ecs:DeregisterTaskDefinition",
+                      "ecs:DescribeClusters",
+                      "ecs:RegisterTaskDefinition",
+                      "ecs:DeleteService",
+                      "ecs:DescribeTaskDefinition",
+                      "ecs:DescribeServices",
+                      "ecs:CreateCluster",
+                      "eks:*",
+                      "elasticloadbalancing:*",
+                      "s3:*",
+                      "acm:DeleteCertificate",
+                      "acm:DescribeCertificate",
+                      "acm:ListTagsForCertificate",
+                      "acm:RequestCertificate",
+                      "acm:AddTagsToCertificate",
+                      "route53:*"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                    "Sid": "AllowListS3StateBucket",
+                    "Effect": "Allow",
+                    "Action": "s3:ListBucket",
+                    "Resource": [
+                        "arn:aws:s3:::coredata-mwaa-devops-tfstate"
+                    ]
+                },
+                {
+                    "Sid": "AllowS3StateBucketAccess",
+                    "Effect": "Allow",
+                    "Action": [
+                        "s3:GetObject",
+                        "s3:PutObject"
+                    ],
+                    "Resource": [
+                        "arn:aws:s3:::coredata-mwaa-devops-tfstate/*"
+                    ]
+                },
+                {
+                    "Sid": "LimitEC2Size",
+                    "Effect": "Deny",
+                    "Action": "ec2:RunInstances",
+                    "Resource": "arn:aws:ec2:*:*:instance/*",
+                    "Condition": {
+                        "ForAnyValue:StringNotLike": {
+                            "ec2:InstanceType": [
+                                "t2.micro",
+                                "t3.medium"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "Sid": "AllowECRAccess",
+                    "Effect": "Allow",
+                    "Action": [
+                        "ecr:*"
+                    ],
+                    "Resource": "arn:aws:ecr:us-east-1:*:repository/*"
+                },
+                {
+                    "Sid": "AllowStateLockingAccess",
+                    "Effect": "Allow",
+                    "Action": [
+                        "dynamodb:PutItem",
+                        "dynamodb:DeleteItem",
+                        "dynamodb:GetItem"
+                    ],
+                    "Resource": [
+                        "arn:aws:dynamodb:*:*:table/coredata-mwaa-devops-tf-state-lock"
+                    ]
+                },
+                 {
+                  "Sid": "ConnectionsFullAccess",
+                  "Effect": "Allow",
+                  "Action": [
+                      "codestar-connections:UseConnection",
+                      "codestar-connections:GetConnection",
+                      "codestar-connections:ListConnections",
+                      "codestar-connections:TagResource",
+                      "codestar-connections:ListTagsForResource",
+                      "codestar-connections:UntagResource"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "secretsmanager:GetSecretValue"
+                    ],
+                  "Resource": "*"
+                }
+                ]
+              }
+
+  CodePipelineRole: 
+    Type: AWS::IAM::Role
+    Properties: 
+      AssumeRolePolicyDocument: |
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "codepipeline.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+              }
+            ]
+          }
+      Description: "code pipeline role used for coredata prod deployment"
+      Policies: 
+        - PolicyName: "cpPolicy"
+          PolicyDocument: |
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "IamPassRolePolicy",
+                  "Effect": "Allow",
+                  "Action": [
+                      "iam:PassRole"
+                  ],
+                  "Resource": "*",
+                  "Condition": {
+                    "StringEqualsIfExists": {
+                      "iam:PassedToService": [
+                        "cloudformation.amazonaws.com",
+                        "elasticbeanstalk.amazonaws.com",
+                        "ec2.amazonaws.com",
+                        "eks.amazonaws.com",
+                        "ecs-tasks.amazonaws.com"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "Sid": "CodeBuildPolicy",
+                  "Effect": "Allow",
+                  "Action": [
+                    "codebuild:BatchGetBuilds",
+                    "codebuild:StartBuild"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Sid": "CodeCommitPolicy",
+                  "Effect": "Allow",
+                  "Action": [
+                    "codecommit:GetBranch",
+                    "codecommit:GetCommit",
+                    "codecommit:UploadArchive",
+                    "codecommit:GetUploadArchiveStatus",
+                    "codecommit:CancelUploadArchive"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Sid": "S3AccessPolicy",
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:GetObjectVersion",
+                    "s3:GetBucketAcl",
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Sid": "ECRAccessPolicy",
+                  "Effect": "Allow",
+                  "Action": [
+                    "ecr:DescribeImages"
+                  ],
+                  "Resource": "*"
+                },
+                {
+                  "Sid": "ConnectionsFullAccess",
+                  "Effect": "Allow",
+                  "Action": [
+                      "codestar-connections:UseConnection",
+                      "codestar-connections:GetConnection",
+                      "codestar-connections:ListConnections",
+                      "codestar-connections:TagResource",
+                      "codestar-connections:ListTagsForResource",
+                      "codestar-connections:UntagResource"
+                  ],
+                  "Resource": "*"
+                }
+              ]
+            }
+
+  EcrDockerRepository:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Delete
+    Properties:
+      RepositoryName: !Join [ "-", [ !Ref GitSourceRepo, !Ref GitBranch ] ]
+
+  EcrDockerRepositoryDQ:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Delete
+    Properties:
+      RepositoryName: !Join [ "-", [ "dq-mwaa", !Ref GitBranch ] ]
+
+  CodeStarConnection:  
+    Type: 'AWS::CodeStarConnections::Connection'
+    Properties:
+      ConnectionName: coredata-mwaa-prod
+      ProviderType: GitHub
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                docker: 18
+              commands:
+                - mkdir -p ~/.ssh
+                - echo ${SSH_KEY} | base64 --decode > ~/.ssh/id_rsa
+                - chmod 600 ~/.ssh/id_rsa
+                - eval "$(ssh-agent -s)"
+                - git submodule update --init --recursive
+                - rm -f /etc/apt/sources.list.d/sbt.list
+                - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg > pubkey.gpg
+                - apt-key add pubkey.gpg
+                - rm -rf pubkey.gpg
+                - apt-get -y update
+                - apt-get -y install jq
+                - apt-get install -y gpg-agent
+                - apt-get install -y git-crypt
+                - export GPG_TTY=$(tty)
+                - echo ${GIT_CRYPT_KEY} | base64 --decode > git-crypt.key
+                - git-crypt unlock git-crypt.key
+                - export AWS_ACCESS_KEY_ID=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.AccessKeyId'`
+                - export AWS_SECRET_ACCESS_KEY=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.SecretAccessKey'`
+                - export AWS_SESSION_TOKEN=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.Token'`
+                - apt-get install -y apt-transport-https ca-certificates curl
+                - curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+                - echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+                - apt-get update
+                - apt-get install -y kubectl
+                - curl https://baltocdn.com/helm/signing.asc | tac | tac | apt-key add -
+                - apt-get install apt-transport-https --yes
+                - echo "deb https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list
+                - apt-get update
+                - apt-get install helm
+                - curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+                - chmod +x ./kind
+                - mv ./kind /usr/local/bin
+                - helm repo add apache-airflow https://airflow.apache.org
+            pre_build:
+              commands:
+                - echo "Starting docker daemon..."
+                - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+                - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+                - echo "Logging into Amazon ECR..."
+                - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION})
+                - TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
+                - cd infra/deploy
+                - docker-compose run --rm terraform init
+                - docker-compose run --rm terraform validate
+            build:
+              commands:
+                - echo Build started on `date`
+                - cd infra/scripts
+                - bash start_cluster.sh
+                - bash run_tests.sh
+                - docker image tag python-image:1.0.1 "${REPOSITORY_URI}:latest" 
+                - docker tag "${REPOSITORY_URI}:latest" "${REPOSITORY_URI}:${TAG}"
+            post_build:
+              commands:
+                - echo Build completed on `date`
+                - cd ../deploy
+                - echo "Pushing Docker image to ECR"
+                - docker push "${REPOSITORY_URI}:latest"
+                - docker push "${REPOSITORY_URI}:${TAG}"
+                - printf '{"Tag":"%s","RepositoryUri":"%s"}' $TAG $REPOSITORY_URI $PROJECT_NAME $ARTIFACT_BUCKET > build.json
+      Environment:
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Type: LINUX_CONTAINER
+        Image: "aws/codebuild/standard:2.0"
+        PrivilegedMode: True
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: REPOSITORY_URI
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerRepository}
+          - Name: TF_VAR_prefix
+            Value: !Ref MwaaName
+          - Name: TF_VAR_cluster_id
+            Value: !Ref EKSCluster
+          - Name: TF_VAR_airflow_dags_bucket
+            Value: !Ref DagsBucketName
+          - Name: TF_VAR_namespace_name
+            Value: !Ref EKSNamespace
+          - Name: TF_VAR_vpc_id
+            Value: !Ref MWAAVpc
+          - Name: TF_VAR_vpc_pv_sub_1
+            Value: !Ref PrivateSub1
+          - Name: TF_VAR_vpc_pv_sub_2
+            Value: !Ref PrivateSub2
+          - Name: TF_VAR_vpc_pv_sub_3
+            Value: !Ref PrivateSub3
+          - Name: TF_VAR_environ
+            Value: !Ref GitBranch
+          - Name: GIT_CRYPT_KEY
+            Type: SECRETS_MANAGER
+            Value: coredata/encryption_keys:GIT_CRYPT_KEY
+          - Name: SSH_KEY
+            Type: SECRETS_MANAGER
+            Value: coredata/encryption_keys:SSH_KEY
+      Name: !Ref AWS::StackName
+      ServiceRole: !Ref CodebuildRole
+    DependsOn: [CodebuildRole,TerraformBucket,TerraformDynamoTable]
+
+  CodeBuildApply:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                docker: 18
+              commands:
+                - mkdir -p ~/.ssh
+                - echo ${SSH_KEY} | base64 --decode > ~/.ssh/id_rsa
+                - chmod 600 ~/.ssh/id_rsa
+                - eval "$(ssh-agent -s)"
+                - git submodule update --init --recursive
+                - rm -f /etc/apt/sources.list.d/sbt.list
+                - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg > pubkey.gpg
+                - apt-key add pubkey.gpg
+                - rm -rf pubkey.gpg
+                - apt-get -y update
+                - apt-get -y install jq
+                - apt-get install -y gpg-agent
+                - apt-get install -y git-crypt
+                - export GPG_TTY=$(tty)
+                - echo ${GIT_CRYPT_KEY} | base64 --decode > git-crypt.key
+                - git-crypt unlock git-crypt.key
+                - export AWS_ACCESS_KEY_ID=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.AccessKeyId'`
+                - export AWS_SECRET_ACCESS_KEY=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.SecretAccessKey'`
+                - export AWS_SESSION_TOKEN=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.Token'`
+                - apt-get install -y apt-transport-https ca-certificates curl
+                - curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+                - echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+                - apt-get update
+            pre_build:
+              commands:
+                - echo "Starting docker daemon..."
+                - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+                - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+                - echo "Logging into Amazon ECR..."
+                - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION})
+                - cd infra/deploy
+                - docker-compose run --rm terraform init
+                - docker-compose run --rm terraform apply -auto-approve
+                - aws eks update-kubeconfig --region us-east-1 --kubeconfig ./kube_config.yaml --name "${TF_VAR_cluster_id}" --alias aws
+                - aws s3 cp ./kube_config.yaml "s3://${TF_VAR_airflow_dags_bucket}/dags/kube_config.yaml"   
+
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: "aws/codebuild/standard:2.0"
+        PrivilegedMode: True
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: REPOSITORY_URI
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerRepository}
+          - Name: TF_VAR_prefix
+            Value: !Ref MwaaName
+          - Name: TF_VAR_cluster_id
+            Value: !Ref EKSCluster
+          - Name: TF_VAR_airflow_dags_bucket
+            Value: !Ref DagsBucketName
+          - Name: TF_VAR_namespace_name
+            Value: !Ref EKSNamespace
+          - Name: TF_VAR_vpc_id
+            Value: !Ref MWAAVpc
+          - Name: TF_VAR_vpc_pv_sub_1
+            Value: !Ref PrivateSub1
+          - Name: TF_VAR_vpc_pv_sub_2
+            Value: !Ref PrivateSub2
+          - Name: TF_VAR_vpc_pv_sub_3
+            Value: !Ref PrivateSub3
+          - Name: TF_VAR_environ
+            Value: !Ref GitBranch
+          - Name: GIT_CRYPT_KEY
+            Type: SECRETS_MANAGER
+            Value: coredata/encryption_keys:GIT_CRYPT_KEY
+          - Name: SSH_KEY
+            Type: SECRETS_MANAGER
+            Value: coredata/encryption_keys:SSH_KEY
+      Name: !Sub ${AWS::StackName}-apply
+      ServiceRole: !Ref CodebuildRole
+    DependsOn: [CodebuildRole,TerraformBucket,TerraformDynamoTable]
+
+  CodeBuildDestroy:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                docker: 18
+              commands:
+                - mkdir -p ~/.ssh
+                - echo ${SSH_KEY} | base64 --decode > ~/.ssh/id_rsa
+                - chmod 600 ~/.ssh/id_rsa
+                - eval "$(ssh-agent -s)"
+                - git submodule update --init --recursive
+                - rm -f /etc/apt/sources.list.d/sbt.list
+                - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg > pubkey.gpg
+                - apt-key add pubkey.gpg
+                - rm -rf pubkey.gpg
+                - apt-get -y update
+                - apt-get -y install jq
+                - apt-get install -y gpg-agent
+                - apt-get install -y git-crypt
+                - export GPG_TTY=$(tty)
+                - echo ${GIT_CRYPT_KEY} | base64 --decode > git-crypt.key
+                - git-crypt unlock git-crypt.key
+                - export AWS_ACCESS_KEY_ID=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.AccessKeyId'`
+                - export AWS_SECRET_ACCESS_KEY=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.SecretAccessKey'`
+                - export AWS_SESSION_TOKEN=`curl --silent 169.254.170.2:80$AWS_CONTAINER_CREDENTIALS_RELATIVE_URI | jq -r '.Token'`
+                - apt-get install -y apt-transport-https ca-certificates curl
+                - curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+                - echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+                - apt-get update
+            pre_build:
+              commands:
+                - echo "Starting docker daemon..."
+                - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+                - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+                - echo "Logging into Amazon ECR..."
+                - $(aws ecr get-login --no-include-email --region ${AWS_DEFAULT_REGION})
+                - cd infra/deploy
+                - docker-compose run --rm terraform init
+                - docker-compose run --rm terraform destroy -force
+
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: "aws/codebuild/standard:2.0"
+        PrivilegedMode: True
+        EnvironmentVariables:
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: REPOSITORY_URI
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerRepository}
+          - Name: TF_VAR_prefix
+            Value: !Ref MwaaName
+          - Name: TF_VAR_cluster_id
+            Value: !Ref EKSCluster
+          - Name: TF_VAR_airflow_dags_bucket
+            Value: !Ref DagsBucketName
+          - Name: TF_VAR_namespace_name
+            Value: !Ref EKSNamespace
+          - Name: TF_VAR_vpc_id
+            Value: !Ref MWAAVpc
+          - Name: TF_VAR_vpc_pv_sub_1
+            Value: !Ref PrivateSub1
+          - Name: TF_VAR_vpc_pv_sub_2
+            Value: !Ref PrivateSub2
+          - Name: TF_VAR_vpc_pv_sub_3
+            Value: !Ref PrivateSub3
+          - Name: TF_VAR_environ
+            Value: !Ref GitBranch
+          - Name: GIT_CRYPT_KEY
+            Type: SECRETS_MANAGER
+            Value: coredata/encryption_keys:GIT_CRYPT_KEY
+          - Name: SSH_KEY
+            Type: SECRETS_MANAGER
+            Value: coredata/encryption_keys:SSH_KEY
+      Name: !Sub ${AWS::StackName}-destroy
+      ServiceRole: !Ref CodebuildRole
+    DependsOn: [CodebuildRole,TerraformBucket,TerraformDynamoTable]
+
+
+  CodePipelineGitHub:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt CodePipelineRole.Arn 
+      ArtifactStore:
+        Type: S3
+        Location: !Ref S3Folder
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: App
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: CodeStarSourceConnection
+              Configuration:
+                ConnectionArn: !Ref CodeStarConnection
+                BranchName: !Ref GitBranch
+                FullRepositoryId: 
+                  !Join ["/",[Ref: GitHubUser, Ref: GitSourceRepo]]
+                OutputArtifactFormat: CODEBUILD_CLONE_REF
+              OutputArtifacts:
+                - Name: App
+              RunOrder: 1
+        - Name: Build
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts:
+                - Name: BuildOutput
+              RunOrder: 1
+        - Name: Apply
+          Actions:
+            - Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeBuildApply
+              InputArtifacts:
+                - Name: App
+              OutputArtifacts:
+                - Name: BuildOutputApply
+              RunOrder: 1
+      
+    DependsOn: [CodeBuildProject,CodePipelineRole]
