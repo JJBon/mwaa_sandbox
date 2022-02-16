@@ -36,8 +36,10 @@ resource "kubernetes_secret" "dcs-secrets" {
 
   type = "generic"
 
+  
   data = {
-        "env_prod.txt" = file("${path.module}/../environments/env_prod.txt")
+    for line in compact(split("\n", file("${path.module}/../environments/.env_prod"))):
+      split("=",line)[0] => split("=",line)[1]  
   }
   
 }
