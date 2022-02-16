@@ -39,7 +39,7 @@ resource "kubernetes_secret" "dcs-secrets" {
   
   data = {
     for line in compact(split("\n", file("${path.module}/../environments/.env_prod"))):
-      split("=",line)[0] => split("=",line)[1]  
+      split("='",line)[0] => substring(split("='",line)[1],0,-2)
   }
   
 }
