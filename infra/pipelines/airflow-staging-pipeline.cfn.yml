@@ -562,7 +562,6 @@ Resources:
             post_build:
               commands:
                 - echo Build completed on `date`
-                - cd ../deploy
                 - echo "Pushing Docker image to ECR"
                 - docker push "${REPOSITORY_URI}:latest"
                 - docker push "${REPOSITORY_URI}:${TAG}"
