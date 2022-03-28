@@ -141,6 +141,12 @@ resource "aws_iam_role" "fargate_airflow_role" {
   })
 }
 
+
+resource "aws_iam_role_policy_attachment" "airflow-AmazonEKSFargatePodExecutionRolePolicy" {
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
+  role       = aws_iam_role.fargate_airflow_role.name
+}
+
 resource "aws_eks_fargate_profile" "airflow_fargate" {
   cluster_name           = aws_eks_cluster.cluster.name
   fargate_profile_name   = "airflow"
@@ -150,9 +156,4 @@ resource "aws_eks_fargate_profile" "airflow_fargate" {
   selector {
     namespace = var.namespace_name
   }
-}
-
-resource "aws_iam_role_policy_attachment" "airflow-AmazonEKSFargatePodExecutionRolePolicy" {
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEKSFargatePodExecutionRolePolicy"
-  role       = aws_iam_role.fargate_airflow_role.name
 }
