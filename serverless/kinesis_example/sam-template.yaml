@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  LambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Timeout: 10
+      Tracing: Active
+      Events:
+        Stream:
+          Type: Kinesis
+          Properties:
+            Stream:
+              Fn::GetAtt:
+              - stream
+              - Arn
+            BatchSize: 100
+            StartingPosition: LATEST
+      CodeUri: s3://jj-sam-projects/4d21c3254d9fa848ee5ae10765f73c15
+  stream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      ShardCount: 1
+Outputs:
+  FunctionName:
+    Description: Function name
+    Value:
+      Ref: LambdaFunction
+  StreamARN:
+    Description: Stream ARN
+    Value:
+      Fn::GetAtt:
+      - stream
+      - Arn

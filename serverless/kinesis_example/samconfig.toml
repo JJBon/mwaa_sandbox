@@ -1,0 +1,13 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "kinesis-demo"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-q0afeboujsl7"
+s3_prefix = "kinesis-demo"
+region = "us-east-1"
+profile = "default"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+image_repositories = []
