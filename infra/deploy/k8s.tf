@@ -175,9 +175,33 @@ resource "kubernetes_config_map" "aws_logging" {
     namespace = kubernetes_namespace.aws_observability.metadata.0.name
   }
   data = {
-    "output.conf" =  "[OUTPUT] Name cloudwatch_logs Match   * region us-east-1 log_group_name fluent-bit-cloudwatch log_stream_prefix from-fluent-bit- auto_create_group true log_key log"
-    "parsers.conf" = "[PARSER] Name crio Format Regex Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$ Time_Key time Time_Format %Y-%m-%dT%H:%M:%S.%L%z"
-    "filters.conf" = "[FILTER] Name parser Match * Key_name log Parser crio"
+    "output.conf" = <<EOF
+      [OUTPUT]
+        Name cloudwatch_logs
+        Match   *
+        region us-east-1
+        log_group_name fluent-bit-cloudwatch
+        log_stream_prefix from-fluent-bit-
+        auto_create_group true
+        log_key log
+    EOF
+    "parsers.conf" = <<EOF
+      [PARSER]
+        Name crio
+        Format Regex
+        Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+    EOF
+
+    "filters.conf" = <<EOF
+      [FILTER]
+        Name parser
+        Match *
+        Key_name log
+        Parser crio
+    EOF
+
   }
 }
 
