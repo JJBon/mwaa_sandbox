@@ -165,7 +165,7 @@ resource "kubernetes_namespace" "aws_observability" {
       aws_observability = "enabled"
     }
 
-    name = aws-observability
+    name = "aws-observability"
   }
 }
 
@@ -195,13 +195,13 @@ data "aws_iam_policy_document" "iam_policy_document_fargate" {
   }
 }
 
-resource "aws_iam_policy" "iam_policy_fagate" {
-  name   = fargatelogs
+resource "aws_iam_policy" "iam_policy_fargate" {
+  name   = "fargatelogs"
   path   = "/"
   policy = data.aws_iam_policy_document.iam_policy_document_fargate.json
 }
 
 resource "aws_iam_role_policy_attachment" "airflow-AmazonEKSFargatePodExecutionRolePolicy-fargate" {
-  policy_arn = aws_iam_policy.iam_policy_fagate.arn
+  policy_arn = aws_iam_policy.iam_policy_fargate.arn
   role       = aws_iam_role.fargate_airflow_role.name
 }
