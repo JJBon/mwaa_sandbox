@@ -41,5 +41,6 @@ aws_args = {
     "config_file":f"{airflow_home}/dags/kube_config.yaml",
     "namespace":"dcs-staging-mwaa",
     "is_delete_operator_pod": True,
-    "configmaps":["airflow-vars"]
+    "configmaps":["airflow-vars"],
+    "annotations":{"CapacityProvisioned":"0.25vCPU 0.5GB"}
 }
