@@ -165,7 +165,8 @@ Resources:
             {
               "Effect": "Allow",
               "Principal": {
-                "Service": "codebuild.amazonaws.com"
+                "Service": "codebuild.amazonaws.com",
+                "AWS": "arn:aws:iam::668102661106:user/haus_user"
               },
               "Action": "sts:AssumeRole"
             }
@@ -387,7 +388,8 @@ Resources:
               {
                 "Effect": "Allow",
                 "Principal": {
-                  "Service": "codepipeline.amazonaws.com"
+                  "Service": "codepipeline.amazonaws.com",
+                  "AWS": "arn:aws:iam::668102661106:user/haus_user"
                 },
                 "Action": "sts:AssumeRole"
               }

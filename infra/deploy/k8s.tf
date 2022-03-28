@@ -157,3 +157,51 @@ resource "aws_eks_fargate_profile" "airflow_fargate" {
     namespace = var.namespace_name
   }
 }
+
+resource "kubernetes_namespace" "aws_observability" {
+  metadata {
+  
+    labels = {
+      aws_observability = "enabled"
+    }
+
+    name = aws-observability
+  }
+}
+
+resource "kubernetes_config_map" "aws_logging" {
+  metadata {
+    name = "aws-logging"
+    namespace = kubernetes_namespace.aws_observability.metadata.0.name
+  }
+  data = {
+    "output.conf" =  "[OUTPUT] Name cloudwatch_logs Match   * region us-east-1 log_group_name fluent-bit-cloudwatch log_stream_prefix from-fluent-bit- auto_create_group true log_key log"
+    "parsers.conf" = "[PARSER] Name crio Format Regex Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$ Time_Key time Time_Format %Y-%m-%dT%H:%M:%S.%L%z"
+    "filters.conf" = "[FILTER] Name parser Match * Key_name log Parser crio"
+  }
+}
+
+data "aws_iam_policy_document" "iam_policy_document_fargate" {
+  statement {
+    sid       = ""
+    actions   = [
+      "logs:CreateLogStream",
+			"logs:CreateLogGroup",
+			"logs:DescribeLogStreams",
+			"logs:PutLogEvents"
+      ]
+    effect    = "Allow"
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "iam_policy_fagate" {
+  name   = fargatelogs
+  path   = "/"
+  policy = data.aws_iam_policy_document.iam_policy_document_fargate.json
+}
+
+resource "aws_iam_role_policy_attachment" "airflow-AmazonEKSFargatePodExecutionRolePolicy-fargate" {
+  policy_arn = aws_iam_policy.iam_policy_fagate.arn
+  role       = aws_iam_role.fargate_airflow_role.name
+}
