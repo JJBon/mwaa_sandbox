@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from kubernetes.client import models as k8s
 
 from airflow import DAG
 from airflow.providers.cncf.kubernetes.operators.kubernetes_pod import KubernetesPodOperator
 from airflow.kubernetes.secret import Secret
 from datetime import datetime, timedelta
+from kubernetes.client import models as k8s
 import os 
 
 airflow_home = os.environ.get("AIRFLOW_HOME")
@@ -32,6 +32,7 @@ local_args = {
     "configmaps":["airflow-vars"]
 }
 
+
 aws_args = {
     "image":"668102661106.dkr.ecr.us-east-1.amazonaws.com/mwaa_sandbox-staging",
     "in_cluster": False,
@@ -42,6 +43,6 @@ aws_args = {
     "namespace":"dcs-staging-mwaa",
     "is_delete_operator_pod": True,
     "annotations":{"CapacityProvisioned":"0.25vCPU 2GB"},
-    "configmaps":["airflow-vars"]
-    
+    "configmaps":["airflow-vars"],
+    "termination_grace_period":3000
 }

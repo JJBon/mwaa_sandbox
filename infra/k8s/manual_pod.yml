@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    CapacityProvisioned: 0.25vCPU 2GB
+    Logging: LoggingEnabled
+    kubernetes.io/psp: eks.privileged
+  creationTimestamp: "2022-03-29T00:22:06Z"
+  labels:
+    airflow_version: 2.0.2
+    dag_id: example_kubernetes_operator
+    eks.amazonaws.com/fargate-profile: airflow
+    execution_date: 2022-03-29T002202.8409340000-c35f871b1
+    kubernetes_pod_operator: "True"
+    pod_name: podRun2
+    task: pod_run
+    task_id: podRun
+    try_number: "1"
+  name: mwaa-tests.dd4882ad19a04fea9c2ef7b61eab7abc
+  namespace: dcs-staging-mwaa
+  resourceVersion: "89634"
+  selfLink: /api/v1/namespaces/dcs-staging-mwaa/pods/mwaa-tests.dd4882ad19a04fea9c2ef7b61eab7abc
+  uid: 42d35c62-e817-4632-ad03-6f3008715b54
+spec:
+  affinity: {}
+  containers:
+  - args:
+    - -c
+    - python /python_code/test_code.py
+    command:
+    - bash
+    env:
+    - name: AWS_STS_REGIONAL_ENDPOINTS
+      value: regional
+    - name: AWS_DEFAULT_REGION
+      value: us-east-1
+    - name: AWS_REGION
+      value: us-east-1
+    - name: AWS_ROLE_ARN
+      value: arn:aws:iam::668102661106:role/service_account_role
+    - name: AWS_WEB_IDENTITY_TOKEN_FILE
+      value: /var/run/secrets/eks.amazonaws.com/serviceaccount/token
+    envFrom:
+    - configMapRef:
+        name: airflow-vars
+    - secretRef:
+        name: dcs-secrets
+    image: 668102661106.dkr.ecr.us-east-1.amazonaws.com/mwaa_sandbox-staging
+    imagePullPolicy: Always
+    name: base
+    resources: {}
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: mwaa-service-account-token-tl5c4
+      readOnly: true
+    - mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
+      name: aws-iam-token
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  priority: 2000001000
+  priorityClassName: system-node-critical
+  restartPolicy: Never
+  schedulerName: fargate-scheduler
+  securityContext: {}
+  serviceAccount: mwaa-service-account
+  serviceAccountName: mwaa-service-account
+  terminationGracePeriodSeconds: 3000
+  tolerations:
+  - effect: NoExecute
+    key: node.kubernetes.io/not-ready
+    operator: Exists
+    tolerationSeconds: 300
+  - effect: NoExecute
+    key: node.kubernetes.io/unreachable
+    operator: Exists
+    tolerationSeconds: 300
+  volumes:
+  - name: aws-iam-token
+    projected:
+      defaultMode: 420
+      sources:
+      - serviceAccountToken:
+          audience: sts.amazonaws.com
+          expirationSeconds: 86400
+          path: token
+  - name: mwaa-service-account-token-tl5c4
+    secret:
+      defaultMode: 420
+      secretName: mwaa-service-account-token-tl5c4
+status:
+  nominatedNodeName: 93e37c11be-b70fbb879ef948918828f0022d898b27
+  phase: Pending
+  qosClass: BestEffort
