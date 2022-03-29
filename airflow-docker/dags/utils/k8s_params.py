@@ -7,7 +7,6 @@ from airflow.kubernetes.secret import Secret
 from datetime import datetime, timedelta
 from kubernetes.client import models as k8s
 import os 
-from datetime import timedelta
 
 airflow_home = os.environ.get("AIRFLOW_HOME")
 
@@ -50,6 +49,5 @@ aws_args = {
     "is_delete_operator_pod": False,
     "configmaps":["airflow-vars"],
     "termination_grace_period":3000,
-    "resources":resources,
-    "execution_timeout": timedelta(minutes=30)
+    "resources":resources
 }
