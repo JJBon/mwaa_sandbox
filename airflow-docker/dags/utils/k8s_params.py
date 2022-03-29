@@ -48,6 +48,6 @@ aws_args = {
     "namespace":"dcs-staging-mwaa",
     "is_delete_operator_pod": False,
     "configmaps":["airflow-vars"],
-    "termination_grace_period":3000,
+    "startup_timeout_seconds":1200,
     "resources":resources
 }
