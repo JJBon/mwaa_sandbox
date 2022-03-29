@@ -32,6 +32,11 @@ local_args = {
     "configmaps":["airflow-vars"]
 }
 
+resources = k8s.V1ResourceRequirements(
+    requests = {
+        "memory":"2Gi"
+    }
+)
 
 aws_args = {
     "image":"668102661106.dkr.ecr.us-east-1.amazonaws.com/mwaa_sandbox-staging",
@@ -41,8 +46,8 @@ aws_args = {
     "secrets":[secret_env],
     "config_file":f"{airflow_home}/dags/kube_config.yaml",
     "namespace":"dcs-staging-mwaa",
-    "is_delete_operator_pod": True,
-    "annotations":{"CapacityProvisioned":"0.25vCPU 2GB"},
+    "is_delete_operator_pod": False,
     "configmaps":["airflow-vars"],
-    "termination_grace_period":3000
+    "termination_grace_period":3000,
+    "resources":resources
 }

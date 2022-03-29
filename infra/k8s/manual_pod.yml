@@ -48,13 +48,15 @@ spec:
     image: 668102661106.dkr.ecr.us-east-1.amazonaws.com/mwaa_sandbox-staging
     imagePullPolicy: Always
     name: base
-    resources: {}
+    resources: 
+      requests:
+        memory: "2Gi"
     terminationMessagePath: /dev/termination-log
     terminationMessagePolicy: File
     volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: mwaa-service-account-token-tl5c4
-      readOnly: true
+    # - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+    #   name: mwaa-service-account-token-tl5c4
+    #   readOnly: true
     - mountPath: /var/run/secrets/eks.amazonaws.com/serviceaccount
       name: aws-iam-token
       readOnly: true
@@ -86,10 +88,10 @@ spec:
           audience: sts.amazonaws.com
           expirationSeconds: 86400
           path: token
-  - name: mwaa-service-account-token-tl5c4
-    secret:
-      defaultMode: 420
-      secretName: mwaa-service-account-token-tl5c4
+  # - name: mwaa-service-account-token-tl5c4
+  #   secret:
+  #     defaultMode: 420
+  #     secretName: mwaa-service-account-token-tl5c4
 status:
   nominatedNodeName: 93e37c11be-b70fbb879ef948918828f0022d898b27
   phase: Pending
