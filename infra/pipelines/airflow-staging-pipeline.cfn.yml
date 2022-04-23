@@ -643,7 +643,10 @@ Resources:
                 - cd infra/deploy
                 - docker-compose run --rm terraform init
                 - docker-compose run --rm terraform apply -auto-approve -lock=false
-                - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --arn "${mwaa_role_arn}" --username mwaa-service   
+                - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --arn "${mwaa_role_arn}" --username mwaa-service
+                - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --namespace "${TF_VAR_namespace_name}" --service-name "emr-containers"
+                - aws emr-containers update-role-trust-policy --cluster-name "${TF_VAR_cluster_id}" --namespace "${TF_VAR_namespace_name}" --role-name "emr-jobs-role"
+                - aws emr-containers create-virtual-cluster --name emr_eks_fargate_cluster --container-provider '{"id": "${TF_VAR_cluster_id}","type": "EKS","info": { "eksInfo": { "namespace": "${TF_VAR_namespace_name}"}}}'
                 - aws eks update-kubeconfig --region us-east-1 --kubeconfig ./kube_config.yaml --name "${TF_VAR_cluster_id}" --alias aws
                 - aws s3 cp ./kube_config.yaml "s3://${TF_VAR_airflow_dags_bucket}/dags/kube_config.yaml"   
       Environment:

@@ -158,7 +158,11 @@ resource "aws_eks_fargate_profile" "airflow_fargate" {
 
   selector {
     namespace = var.namespace_name
+    labels = {
+      pod_env = "fargate"
+    }
   }
+
 }
 
 resource "kubernetes_namespace" "aws_observability" {
