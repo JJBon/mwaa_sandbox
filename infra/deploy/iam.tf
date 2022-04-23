@@ -1,6 +1,6 @@
 resource "aws_iam_role" "emr_jobs_role" {
   # Using a prefix ensures a unique name
-  name_prefix = "emr-jobs-role"
+  name = "emr-jobs-role"
 
   assume_role_policy = jsonencode({
     Statement = [{

@@ -1,0 +1,30 @@
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM1ekNDQWMrZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJeU1EUXlNekUzTVRneU1Wb1hEVE15TURReU1ERTNNVGd5TVZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTS9yClIvL3YvdTh1MFFOaFNtaDhSODNRZnA5YXJ6a3F1dFNqcnFKQlFUNkxYdS9qZitUalRGcjVybG82SXUwb3RrdjgKaGx3dXVlbUpmNWovTTd3bk91a2dhTXphdmJxakxiSHdMdGo3eHdjL2J0TjVMeVVnbWl5dXFISCtXNVRDczUxcgo4NkpaZThibklaZ1Z6d2F3cCtSY05TbTI4em9XR1NYUTYwR2g0S3hBTlcza0QwU0I3S1UxcGRpWFNRdXdBK1ErCnNpblZ3SWZQTG8rWEEvMlh0ZExkcWIzY0gxRnJ4OHNQbEN2OE0rRTVBR1JGSGpEWUVZeE05YlVqem91SllRS2wKS1RFeWZOS3oyNEtiV1EvMjYxVVNWamhnVG9lOVZTMTJWZFQvdVAyM2RzQWI5ZnhUeDJQblZTV0RNWHd5QlM3Ygovd21TcHZHZzRVWU1QcE5JN2djQ0F3RUFBYU5DTUVBd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZNa2ZlSFVIVFJsdHFGbWphU0RtQWJBZXFybHVNQTBHQ1NxR1NJYjMKRFFFQkN3VUFBNElCQVFBVTEyWWFLMHhYb3pkZnpNdjN2blIxdnVxY3lnM2Vpb1RxQk1JSFJPQ3Q2SXhKTUJuMApUTDhTckl5azhZUmhrdTZBRktVVUJEZ2lOWHNLWFV3QlhSb200cmdwMEhoN2twbjh6MmRsQ0h1NGpST3p4MzV4CjJ1SU5FOHdQdmVGbExaQldXZ2gxSGhSdFVOQi8rVUQ4QzF0Y0VZNjhsaGhDZ3AxU0x0Wm8yZlAweDVpMWUvVkcKQ0ZlbE5oMXZMUUFjZDJZWERtS3ZsNUo4YVJkRW1aTnFtUVpkQUx1bXI5Q3N3WXpmTlJ2b0cyQUlLSUpwcDlwbgpER0FRdXpaL1A5U1NMMVE1Wm1zaFQ5ZE9QZERYd2FyMHZlSjJxc29zUWRoZmtyMytFWjJPVmxkOERTNFpvMHBDCndaQ2R4QUNIcm9YMlFaQnJzNG1Vd2pnSS9VRDJMNFpxK2h5dwotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    server: https://4B8BC17F3B59DFBC48E1ABC024FE923C.sk1.us-east-1.eks.amazonaws.com
+  name: arn:aws:eks:us-east-1:668102661106:cluster/lh-shared-services
+contexts:
+- context:
+    cluster: arn:aws:eks:us-east-1:668102661106:cluster/lh-shared-services
+    user: arn:aws:eks:us-east-1:668102661106:cluster/lh-shared-services
+  name: arn:aws:eks:us-east-1:668102661106:cluster/lh-shared-services
+current-context: arn:aws:eks:us-east-1:668102661106:cluster/lh-shared-services
+kind: Config
+preferences: {}
+users:
+- name: arn:aws:eks:us-east-1:668102661106:cluster/lh-shared-services
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1alpha1
+      args:
+      - --region
+      - us-east-1
+      - eks
+      - get-token
+      - --cluster-name
+      - lh-shared-services
+      command: aws
+      env:
+      - name: AWS_PROFILE
+        value: default
