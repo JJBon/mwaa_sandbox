@@ -20,9 +20,7 @@ data "aws_iam_policy_document" "iam_policy_document_emr" {
  statement {
     sid = ""
     actions = [
-      "s3:PutObject",
-      "s3:GetObject",
-      "s3:ListBucket"
+      "s3:*"
     ]
     effect = "Allow"
     resources = ["*"]
