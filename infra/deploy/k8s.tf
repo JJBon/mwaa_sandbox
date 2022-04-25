@@ -179,7 +179,7 @@ resource "aws_eks_fargate_profile" "airflow_fargate" {
 
 }
 
-resource "aws_eks_fargate_profile" "airflow_fargate" {
+resource "aws_eks_fargate_profile" "emr_fargate" {
   cluster_name           = aws_eks_cluster.cluster.name
   fargate_profile_name   = "emr"
   pod_execution_role_arn = aws_iam_role.fargate_airflow_role.arn
