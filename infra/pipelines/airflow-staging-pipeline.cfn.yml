@@ -300,7 +300,8 @@ Resources:
                       "acm:RequestCertificate",
                       "acm:AddTagsToCertificate",
                       "route53:*",
-                      "emr-containers:*"
+                      "emr-containers:*",
+                      "cloudformation:*"
                   ],
                   "Resource": "*"
                 },
@@ -620,9 +621,6 @@ Resources:
               runtime-versions:
                 docker: 18
               commands:
-                - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-                - unzip -q awscliv2.zip
-                - ./aws/install -i /usr/local/aws-cli -b /usr/local/bin --update
                 - rm -f /etc/apt/sources.list.d/sbt.list
                 - curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg > pubkey.gpg
                 - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
@@ -650,8 +648,6 @@ Resources:
                 - docker-compose run --rm terraform apply -auto-approve -lock=false
                 - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --arn "${mwaa_role_arn}" --username mwaa-service
                 - eksctl create iamidentitymapping --region us-east-1 --cluster "${TF_VAR_cluster_id}" --namespace "${TF_VAR_namespace_name}" --service-name emr-containers
-                - aws emr-containers update-role-trust-policy --cluster-name "${TF_VAR_cluster_id}" --namespace "${TF_VAR_namespace_name}" --role-name "emr-jobs-role"
-                - aws emr-containers create-virtual-cluster --name emr_eks_fargate_cluster --container-provider ’{“id": "${TF_VAR_cluster_id}","type": "EKS","info": { "eksInfo": { "namespace": "${TF_VAR_namespace_name}"}}}'
                 - aws eks update-kubeconfig --region us-east-1 --kubeconfig ./kube_config.yaml --name "${TF_VAR_cluster_id}" --alias aws
                 - aws s3 cp ./kube_config.yaml "s3://${TF_VAR_airflow_dags_bucket}/dags/kube_config.yaml"   
       Environment:

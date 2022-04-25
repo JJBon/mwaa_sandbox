@@ -22,4 +22,4 @@ services:
       - TF_VAR_vpc_pv_sub_2=${TF_VAR_vpc_pv_sub_2}
       - TF_VAR_vpc_pv_sub_3=${TF_VAR_vpc_pv_sub_3}
       - TF_VAR_mwaa_role=${TF_VAR_mwaa_role}
-      - TF_VAR_service_account_name=${TF_VAR_service_account_name}
+      - TF_VAR_service_account_name=${TF_VAR_service_account_name}    
