@@ -17,7 +17,7 @@ metadata:
     task_id: podRun
     try_number: "1"
   name: mwaa-tests.dd4882ad19a04fea9c2ef7b61eab7abc
-  namespace: dcs-staging-mwaa
+  namespace: dcs-staging-staging
   resourceVersion: "89634"
   selfLink: /api/v1/namespaces/dcs-staging-mwaa/pods/mwaa-tests.dd4882ad19a04fea9c2ef7b61eab7abc
   uid: 42d35c62-e817-4632-ad03-6f3008715b54
