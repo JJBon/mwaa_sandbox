@@ -12,6 +12,17 @@ provider "kubernetes" {
   token                  = data.aws_eks_cluster_auth.eks.token
 }
 
+provider "helm" {
+  kubernetes {
+    host                   = data.aws_eks_cluster.eks.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+    exec {
+      api_version = "client.authentication.k8s.io/v1alpha1"
+      args        = ["eks", "get-token", "--cluster-name", var.cluster_id]
+      command     = "aws"
+    }
+  }
+}
 resource "kubernetes_namespace" "staging_ns" {
   metadata {
     annotations = {
@@ -25,6 +36,7 @@ resource "kubernetes_namespace" "staging_ns" {
     name = var.namespace_name
   }
 }
+
 
 resource "kubernetes_namespace" "emr_ns" {
   metadata {
@@ -172,8 +184,8 @@ resource "aws_eks_fargate_profile" "airflow_fargate" {
 
   selector {
     namespace = var.namespace_name
-    labels = {
-      type = "etl"
+    labels {
+      workerType = "Fargate"
     }
   }
 
@@ -262,4 +274,22 @@ resource "aws_iam_policy" "iam_policy_fargate" {
 resource "aws_iam_role_policy_attachment" "airflow-AmazonEKSFargatePodExecutionRolePolicy-fargate" {
   policy_arn = aws_iam_policy.iam_policy_fargate.arn
   role       = aws_iam_role.fargate_airflow_role.name
+}
+
+resource "helm_release" "airflow" {
+  name       = "airflow"
+  repository = "https://airflow.apache.org"
+  chart      = "airflow"
+  namespace  = kubernetes_namespace.staging_ns.metadata.0.name
+
+  set {
+    name = "images.airflow.repository"
+    value = "668102661106.dkr.ecr.us-east-1.amazonaws.com/airflow-staging"
+  }
+
+  set {
+    name = "images.airflow.tag"
+    value = "latest"
+  }
+  
 }

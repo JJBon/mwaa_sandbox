@@ -3,7 +3,11 @@ version: '3.7'
 services:
   terraform:
     #image: public.ecr.aws/hashicorp/terraform:0.14.9
-    image: public.ecr.aws/hashicorp/terraform:0.13.7
+    #image: public.ecr.aws/hashicorp/terraform:0.13.7
+    #image: public.ecr.aws/hashicorp/terraform:1.1.0-alpha20211020
+    image: terraform:1.1.0
+    build:
+      context: .
     volumes:
       - .:/infra
       - ../../airflow-docker:/airflow-docker

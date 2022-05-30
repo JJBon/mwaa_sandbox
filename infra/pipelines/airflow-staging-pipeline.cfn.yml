@@ -495,6 +495,13 @@ Resources:
     Properties:
       RepositoryName: !Join [ "-", [ !Ref GitSourceRepo, !Ref GitBranch ] ]
 
+
+  EcrDockerRepositoryAirflow:
+    Type: AWS::ECR::Repository
+    DeletionPolicy: Delete
+    Properties:
+      RepositoryName: !Join [ "-", [ airflow, !Ref GitBranch ] ]
+
   CodeStarConnection:  
     Type: 'AWS::CodeStarConnections::Connection'
     Properties:
@@ -564,12 +571,16 @@ Resources:
                 - bash start_cluster.sh
                 - docker image tag python-image:1.0.1 "${REPOSITORY_URI}:latest" 
                 - docker tag "${REPOSITORY_URI}:latest" "${REPOSITORY_URI}:${TAG}"
+                - docker image tag airflow-image:1.0.1 "${REPOSITORY_URI_AIRFLOW}:latest" 
+                - docker tag "${REPOSITORY_URI}:latest" "${REPOSITORY_URI_AIRFLOW}:${TAG}"
             post_build:
               commands:
                 - echo Build completed on `date`
                 - echo "Pushing Docker image to ECR"
                 - docker push "${REPOSITORY_URI}:latest"
                 - docker push "${REPOSITORY_URI}:${TAG}"
+                - docker push "${REPOSITORY_URI_AIRFLOW}:latest"
+                - docker push "${REPOSITORY_URI_AIRFLOW}:${TAG}"
                 - printf '{"Tag":"%s","RepositoryUri":"%s"}' $TAG $REPOSITORY_URI $PROJECT_NAME $ARTIFACT_BUCKET > build.json
       Environment:
         ComputeType: BUILD_GENERAL1_MEDIUM
@@ -581,6 +592,8 @@ Resources:
             Value: !Ref AWS::Region
           - Name: REPOSITORY_URI
             Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerRepository}
+          - Name: REPOSITORY_URI_AIRFLOW
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrDockerRepositoryAirflow}
           - Name: TF_VAR_prefix
             Value: !Ref MwaaName
           - Name: TF_VAR_cluster_id
