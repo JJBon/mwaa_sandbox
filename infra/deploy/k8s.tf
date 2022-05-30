@@ -184,8 +184,8 @@ resource "aws_eks_fargate_profile" "airflow_fargate" {
 
   selector {
     namespace = var.namespace_name
-    labels {
-      workerType = "Fargate"
+    labels = {
+      "workerType" = "Fargate"
     }
   }
 

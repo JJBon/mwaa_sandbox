@@ -612,6 +612,10 @@ Resources:
             Value: !Ref PrivateSub3
           - Name: TF_VAR_mwaa_role
             Value: !Ref MWAARole
+          - Name: TF_VAR_service_account_name
+            Value: !Ref ServiceAccountName
+          - Name: mwaa_role_arn
+            Value: !Sub arn:aws:iam::${AWS::AccountId}:role/${MWAARole}
           - Name: GIT_KEY
             Type: SECRETS_MANAGER
             Value: GitHubKeys:gitkey
