@@ -572,7 +572,7 @@ Resources:
                 - docker image tag python-image:1.0.1 "${REPOSITORY_URI}:latest" 
                 - docker tag "${REPOSITORY_URI}:latest" "${REPOSITORY_URI}:${TAG}"
                 - docker image tag airflow-image:1.0.1 "${REPOSITORY_URI_AIRFLOW}:latest" 
-                - docker tag "${REPOSITORY_URI}:latest" "${REPOSITORY_URI_AIRFLOW}:${TAG}"
+                - docker tag "${REPOSITORY_URI_AIRFLOW}:latest" "${REPOSITORY_URI_AIRFLOW}:${TAG}"
             post_build:
               commands:
                 - echo Build completed on `date`
