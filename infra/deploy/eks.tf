@@ -79,13 +79,13 @@ resource "aws_eks_node_group" "nodes" {
   subnet_ids      = [aws_subnet.private_subnets[0].id, aws_subnet.private_subnets[1].id]
   # We start with a minimal setup
   scaling_config {
-    desired_size = 2
-    max_size     = 2
+    desired_size = 1
+    max_size     = 1
     min_size     = 1
   }
 
   # I'd recommend t3.large or t3.xlarge for most production workloads
-  instance_types = ["t2.micro"]
+  instance_types = ["t2.medium"]
 
   # Ensure that IAM Role permissions are created before and deleted after EKS Node Group handling.
   # Otherwise, EKS will not be able to properly delete EC2 Instances and Elastic Network Interfaces.
